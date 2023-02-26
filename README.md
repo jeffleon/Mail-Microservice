@@ -14,6 +14,10 @@ create yours or change the name for use this one
     make up_build
 ```
 ----
+### Test
+* Check the email in MailHog
+    [MailHog UI](http://localhost:8025)
+----
 ### Docs
 * See the documentation ones the API is up in the following URL
 
