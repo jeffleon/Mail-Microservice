@@ -16,7 +16,7 @@ create yours or change the name for use this one
 ----
 ### Test
 * Check the email in MailHog
-    [MailHog UI](http://localhost:8025)
+    [MailHog UI http://localhost:8025](http://localhost:8025)
 ----
 ### Docs
 * See the documentation ones the API is up in the following URL
