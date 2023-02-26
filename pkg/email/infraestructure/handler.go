@@ -14,6 +14,16 @@ type MailHandler struct {
 	MailService application.EmailService
 }
 
+// 	SendEmail
+//	@Tags			email
+//	@Summary		Send Mail
+//	@Description	Send Mail
+//	@Accept			json
+//	@Produce		json
+//  @Param request body domain.Message true "query params"
+//	@Success		200		{object}	domain.StandardResponse
+//	@Failure		422		{object}	object{status=string,error=error}
+//	@Router			/email [post]
 func (h *MailHandler) SendEmail(ctx *gin.Context) {
 	var requestBody domain.Message
 	if err := ctx.BindJSON(&requestBody); err != nil {

@@ -2,10 +2,10 @@ package swagger
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/jeffleon/email-service/docs"
 	"github.com/jeffleon/email-service/internal/config"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"github.com/swaggo/swag/example/basic/docs"
 )
 
 type Routes struct{}

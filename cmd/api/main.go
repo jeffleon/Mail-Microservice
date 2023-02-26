@@ -1,5 +1,11 @@
 package main
 
+// @title     Mail API
+// @version   1.0
+
+// @host      localhost:8081
+// @BasePath  /api/mail/v1
+
 import (
 	"fmt"
 	"time"

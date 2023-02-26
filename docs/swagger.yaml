@@ -1,0 +1,64 @@
+basePath: /api/mail/v1
+definitions:
+  domain.Message:
+    properties:
+      from:
+        type: string
+      from_name:
+        type: string
+      message:
+        type: string
+      subject:
+        type: string
+      to:
+        type: string
+    type: object
+  domain.StandardResponse:
+    properties:
+      data: {}
+      dataType:
+        type: string
+      error:
+        type: string
+      status:
+        type: string
+    type: object
+host: localhost:8081
+info:
+  contact: {}
+  title: Mail API
+  version: "1.0"
+paths:
+  /email:
+    post:
+      consumes:
+      - application/json
+      description: Send Mail
+      parameters:
+      - description: query params
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/domain.Message'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.StandardResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            allOf:
+            - type: object
+            - properties:
+                error: {}
+                status:
+                  type: string
+              type: object
+      summary: Send Mail
+      tags:
+      - email
+swagger: "2.0"
