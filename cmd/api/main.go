@@ -8,22 +8,22 @@ package main
 
 import (
 	"fmt"
-	"time"
+	"log"
+	"net"
+	"net/rpc"
 
 	"github.com/jeffleon/email-service/internal/config"
 	appl "github.com/jeffleon/email-service/pkg/email/aplication"
-	"github.com/jeffleon/email-service/pkg/email/domain"
 	infra "github.com/jeffleon/email-service/pkg/email/infraestructure"
 	"github.com/jeffleon/email-service/pkg/health"
 	"github.com/jeffleon/email-service/pkg/router"
 	"github.com/jeffleon/email-service/pkg/swagger"
 	"github.com/sirupsen/logrus"
-	mail "github.com/xhit/go-simple-mail/v2"
 )
 
 func main() {
 	config.InitEnvConfigs()
-	smtpClient, email, err := InitMail()
+	smtpClient, email, err := config.InitMail()
 	if err != nil {
 		logrus.Fatalf("Error initialization the mailer error: %s", err)
 	}
@@ -36,29 +36,27 @@ func main() {
 		Health:  health.NewHealthCheckRoutes(),
 		Swagger: swagger.NewSwaggerDocsRoutes(),
 	})
+	// Register the RPC server
+	err = rpc.Register(new(infra.Mailer))
+	if err != nil {
+		logrus.Fatalf("Error initialization RPC server: %s", err)
+	}
+	go rpcListen()
 	logrus.Fatal(r.Run(fmt.Sprintf(":%s", config.EnvConfigs.AppPort)))
 }
 
-func InitMail() (*mail.SMTPClient, *domain.EMail, error) {
-	server := mail.NewSMTPClient()
-	server.Port = config.EnvConfigs.EmailPort
-	server.Host = config.EnvConfigs.EmailHost
-	server.Password = config.EnvConfigs.EmailPassword
-	server.Username = config.EnvConfigs.EmailUserName
-	server.Encryption = mail.EncryptionNone
-	server.ConnectTimeout = 10 * time.Second
-	server.SendTimeout = 10 * time.Second
-	server.KeepAlive = true
-
-	email := &domain.EMail{
-		Domain:      config.EnvConfigs.EmailDomain,
-		FromAddress: config.EnvConfigs.EmailFromAddress,
-		FromName:    config.EnvConfigs.EmailFromName,
-	}
-
-	smtpClient, err := server.Connect()
+func rpcListen() error {
+	log.Println("Starting RPC server on port", config.EnvConfigs.RPCPort)
+	listen, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%s", config.EnvConfigs.RPCPort))
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
-	return smtpClient, email, nil
+	defer listen.Close()
+	for {
+		rpcConn, err := listen.Accept()
+		if err != nil {
+			continue
+		}
+		go rpc.ServeConn(rpcConn)
+	}
 }

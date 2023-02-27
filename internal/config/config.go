@@ -24,6 +24,7 @@ type envConfigs struct {
 	EmailEncription  string `mapstructure:"EMAIL_ENCRIPTION"`
 	EmailFromName    string `mapstructure:"EMAIL_FROM_NAME"`
 	EmailFromAddress string `mapstructure:"EMAIL_FROM_ADDRESS"`
+	RPCPort          string `mapstructure:"RPC_PORT"`
 }
 
 func loadEnvVariables() (config *envConfigs) {

@@ -2,9 +2,11 @@ package infra
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"os"
 
+	"github.com/jeffleon/email-service/internal/config"
 	"github.com/jeffleon/email-service/pkg/email/domain"
 	"github.com/sirupsen/logrus"
 	"github.com/vanng822/go-premailer/premailer"
@@ -69,8 +71,7 @@ func (m *Mailer) inlineCSS(s string) (string, error) {
 	return html, nil
 }
 
-func (m *Mailer) SendEmail(msg domain.Message) error {
-
+func (m *Mailer) PrepareEmail(msg domain.Message, smtpClient *mail.SMTPClient) error {
 	htmlBody, err := m.buildHTMLMessage(msg)
 	if err != nil {
 		logrus.Errorf("Error whith creation mail body : %s", err)
@@ -91,13 +92,29 @@ func (m *Mailer) SendEmail(msg domain.Message) error {
 	email.SetBody(mail.TextHTML, htmlBody)
 	email.AddAlternative(mail.TextPlain, textbody)
 	email.AddAttachmentData(newImage, "example.pdf", "pdf")
-	err = email.Send(m.smtpClient)
+	err = email.Send(smtpClient)
 	if err != nil {
 		logrus.Errorf("Error sending mail : %s", err)
 		return err
 	}
 
 	logrus.Infof("Sent Email to %s", msg.To)
+	return nil
+}
+
+func (m *Mailer) SendEmail(msg domain.Message) error {
+	return m.PrepareEmail(msg, m.smtpClient)
+}
+
+func (m *Mailer) RPCSendEmail(msg domain.Message, res *string) error {
+	smtp, _, err := config.InitMail()
+	if err != nil {
+		return err
+	}
+	if err := m.PrepareEmail(msg, smtp); err != nil {
+		return err
+	}
+	*res = fmt.Sprintf("Sent Email %s", msg.To)
 	return nil
 }
 
