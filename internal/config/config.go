@@ -25,6 +25,11 @@ type envConfigs struct {
 	EmailFromName    string `mapstructure:"EMAIL_FROM_NAME"`
 	EmailFromAddress string `mapstructure:"EMAIL_FROM_ADDRESS"`
 	RPCPort          string `mapstructure:"RPC_PORT"`
+	KafkaHost        string `mapstructure:"KAFKA_HOST" default:"localhost"`
+	KafkaUsername    string `mapstructure:"KAFKA_USERNAME"`
+	KafkaPassword    string `mapstructure:"KAFKA_PASSWORD"`
+	KafkaUserTopic   string `mapstructure:"KAFKA_USER_TOPIC"`
+	KafkaPort        string `mapstructure:"KAFKA_PORT" deafault:"9092"`
 }
 
 func loadEnvVariables() (config *envConfigs) {

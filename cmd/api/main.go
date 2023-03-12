@@ -12,9 +12,11 @@ import (
 	"net"
 	"net/rpc"
 
+	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/jeffleon/email-service/internal/config"
 	appl "github.com/jeffleon/email-service/pkg/email/aplication"
 	infra "github.com/jeffleon/email-service/pkg/email/infraestructure"
+	"github.com/jeffleon/email-service/pkg/email/infraestructure/repository"
 	"github.com/jeffleon/email-service/pkg/health"
 	"github.com/jeffleon/email-service/pkg/router"
 	"github.com/jeffleon/email-service/pkg/swagger"
@@ -27,7 +29,11 @@ func main() {
 	if err != nil {
 		logrus.Fatalf("Error initialization the mailer error: %s", err)
 	}
-	emailRepo := infra.NewMailer(smtpClient, email)
+
+	InitKafkaConsumer()
+	logrus.Info("Kafka connected")
+
+	emailRepo := repository.NewMailer(smtpClient, email)
 	emailService := appl.NewEmailService(emailRepo)
 	emailHandler := infra.MailHandler{MailService: emailService}
 	emailRoutes := infra.NewRoutes(emailHandler)
@@ -37,7 +43,7 @@ func main() {
 		Swagger: swagger.NewSwaggerDocsRoutes(),
 	})
 	// Register the RPC server
-	err = rpc.Register(new(infra.Mailer))
+	err = rpc.Register(new(repository.Mailer))
 	if err != nil {
 		logrus.Fatalf("Error initialization RPC server: %s", err)
 	}
@@ -59,4 +65,31 @@ func rpcListen() error {
 		}
 		go rpc.ServeConn(rpcConn)
 	}
+}
+
+func InitKafkaConsumer() {
+	fmt.Println(config.EnvConfigs)
+	fmt.Printf("%s %s", config.EnvConfigs.KafkaUsername, config.EnvConfigs.KafkaPassword)
+	fmt.Printf("%s %s", config.EnvConfigs.KafkaHost, config.EnvConfigs.KafkaPort)
+	consumer, err := kafka.NewConsumer(&kafka.ConfigMap{
+		"bootstrap.servers": fmt.Sprintf("%s:%s", config.EnvConfigs.KafkaHost, config.EnvConfigs.KafkaPort),
+		"security.protocol": "SASL_SSL",
+		"sasl.username":     config.EnvConfigs.KafkaUsername,
+		"sasl.password":     config.EnvConfigs.KafkaPassword,
+		"sasl.mechanism":    "PLAIN",
+		"group.id":          "myGroup",
+		"auto.offset.reset": "earliest",
+	})
+
+	if err != nil {
+		panic(err)
+	}
+
+	kafkaRepository := repository.NewKafkaRepository(consumer)
+	err = kafkaRepository.TopicConsume()
+
+	if err != nil {
+		panic(err)
+	}
+
 }

@@ -1,10 +1,9 @@
-package infra
+package repository
 
 import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"os"
 
 	"github.com/jeffleon/email-service/internal/config"
 	"github.com/jeffleon/email-service/pkg/email/domain"
@@ -88,10 +87,10 @@ func (m *Mailer) PrepareEmail(msg domain.Message, smtpClient *mail.SMTPClient) e
 		AddTo(msg.To).
 		SetSubject(msg.Subject)
 
-	newImage, _ := os.ReadFile("./attachment/example.pdf")
+	//newImage, _ := os.ReadFile("./attachment/example.pdf")
 	email.SetBody(mail.TextHTML, htmlBody)
 	email.AddAlternative(mail.TextPlain, textbody)
-	email.AddAttachmentData(newImage, "example.pdf", "pdf")
+	//email.AddAttachmentData(newImage, "example.pdf", "pdf")
 	err = email.Send(smtpClient)
 	if err != nil {
 		logrus.Errorf("Error sending mail : %s", err)

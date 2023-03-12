@@ -11,6 +11,7 @@ services:
     ports:
       - 8081:8081
       - 5001:5001
+      - 9092:9092
 
   mailhog:
     image: 'mailhog/mailhog:latest'
