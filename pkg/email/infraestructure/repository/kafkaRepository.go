@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -12,11 +13,13 @@ import (
 
 type kafkaRepository struct {
 	consumer *kafka.Consumer
+	sendMail domain.SendMailer
 }
 
-func NewKafkaRepository(consumer *kafka.Consumer) domain.KafkaRepository {
+func NewKafkaRepository(consumer *kafka.Consumer, sendMail domain.SendMailer) domain.KafkaRepository {
 	return &kafkaRepository{
 		consumer,
+		sendMail,
 	}
 }
 
@@ -33,16 +36,42 @@ func (k *kafkaRepository) TopicConsume() error {
 		for run {
 			msg, err := k.consumer.ReadMessage(time.Second)
 			if err == nil {
-				fmt.Printf("Message on %s: %s\n", msg.TopicPartition, string(msg.Value))
+				fmt.Printf("Message on %s: %s %s\n", msg.TopicPartition, string(msg.Key), string(msg.Value))
+				err := k.Listen(msg)
+				if err != nil {
+					logrus.Errorf("Consumer error sending email: %v (%v)\n", err, msg)
+				}
 			} else if !err.(kafka.Error).IsTimeout() {
-				// The client will automatically try to recover from all errors.
-				// Timeout is not considered an error because it is raised by
-				// ReadMessage in absence of messages.
 				fmt.Printf("Consumer error: %v (%v)\n", err, msg)
 			}
 		}
 		k.consumer.Close()
 	}()
 
+	return nil
+}
+
+func (k *kafkaRepository) Listen(msg *kafka.Message) error {
+
+	if string(msg.Key) == "created_user" {
+		var user domain.User
+		err := json.Unmarshal(msg.Value, &user)
+		if err != nil {
+			return err
+		}
+
+		err = k.sendMail(domain.Message{
+			From:     config.EnvConfigs.EmailFromAddress,
+			FromName: config.EnvConfigs.EmailFromName,
+			To:       user.Email,
+			Subject:  fmt.Sprintf("Welcome from kafka %s", user.FirstName),
+			Message:  fmt.Sprintf("Welcome from kafka %s", user.FirstName),
+		})
+		if err != nil {
+			return err
+		}
+		logrus.Infof("Sending from Kafka succedded to %s", user.Email)
+		return nil
+	}
 	return nil
 }

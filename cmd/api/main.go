@@ -15,6 +15,7 @@ import (
 	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
 	"github.com/jeffleon/email-service/internal/config"
 	appl "github.com/jeffleon/email-service/pkg/email/aplication"
+	"github.com/jeffleon/email-service/pkg/email/domain"
 	infra "github.com/jeffleon/email-service/pkg/email/infraestructure"
 	"github.com/jeffleon/email-service/pkg/email/infraestructure/repository"
 	"github.com/jeffleon/email-service/pkg/health"
@@ -30,11 +31,12 @@ func main() {
 		logrus.Fatalf("Error initialization the mailer error: %s", err)
 	}
 
-	InitKafkaConsumer()
-	logrus.Info("Kafka connected")
-
 	emailRepo := repository.NewMailer(smtpClient, email)
 	emailService := appl.NewEmailService(emailRepo)
+
+	InitKafkaConsumer(emailService.SendEmail)
+	logrus.Info("Kafka connected")
+
 	emailHandler := infra.MailHandler{MailService: emailService}
 	emailRoutes := infra.NewRoutes(emailHandler)
 	r := router.NewRouter(router.RoutesGroup{
@@ -67,7 +69,7 @@ func rpcListen() error {
 	}
 }
 
-func InitKafkaConsumer() {
+func InitKafkaConsumer(sendMail domain.SendMailer) {
 	fmt.Println(config.EnvConfigs)
 	fmt.Printf("%s %s", config.EnvConfigs.KafkaUsername, config.EnvConfigs.KafkaPassword)
 	fmt.Printf("%s %s", config.EnvConfigs.KafkaHost, config.EnvConfigs.KafkaPort)
@@ -85,7 +87,7 @@ func InitKafkaConsumer() {
 		panic(err)
 	}
 
-	kafkaRepository := repository.NewKafkaRepository(consumer)
+	kafkaRepository := repository.NewKafkaRepository(consumer, sendMail)
 	err = kafkaRepository.TopicConsume()
 
 	if err != nil {
